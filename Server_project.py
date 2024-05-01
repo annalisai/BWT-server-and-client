@@ -13,7 +13,8 @@ def bwt_transform(input_str):
     # Generate a suffix array and sort it based on suffixes
 
     lenght_str = range(len(input_str))
-    suffix_array = (sorted(lenght_str), key=lambda i: input_str[i:])
+    suffix_array = sorted(range(len(input_str)), key=lambda i: input_str[i:])
+
     # Construct the BWT from the sorted suffix array
     bwt_result = ''.join(input_str[i - 1] for i in suffix_array)
     return bwt_result
