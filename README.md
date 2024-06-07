@@ -47,7 +47,7 @@ python3 Client_project.py --host 127.0.0.1 --port 8080 --command BWT --data ATGC
 
 To perform the inverse Burrows-Wheeler Transform on a BWT sequence:
 ```
-python3 Client_project.py --host 127.0.0.1 --port 8080 --command InverseBWT --data CGTA$
+python3 Client_project.py --host 127.0.0.1 --port 8080 --command InverseBWT --data C$GTA
 ```
 
 ## Testing with unittest
