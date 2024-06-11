@@ -1,108 +1,126 @@
 # Import necessary modules
 import socket  # Provides access to socket API
-import threading  # Provides threading support
 import logging  # Provides logging functionality
-
-
+import threading
 
 # BWT IMPLEMENTATION
 # Function to perform Burrows-Wheeler Transform
 def bwt_transform(input_str):
-    # Append '$' to the end of the input string
-    input_str += "$"
-    # Generate a suffix array and sort it based on suffixes
+    """
+    Perform the Burrows-Wheeler Transform on the input string.
+    
+    Parameters:
+    input_str (str): The input string to transform.
 
-    lenght_str = range(len(input_str))
-    suffix_array = sorted(range(len(input_str)), key=lambda i: input_str[i:])
+    Returns:
+    str: The transformed string.
+    """
+    try:
+        # Append '$' to the end of the input string
+        input_str += "$"
+        # Generate a suffix array and sort it based on suffixes
+        suffix_array = sorted(range(len(input_str)), key=lambda i: input_str[i:])
 
-    # Construct the BWT from the sorted suffix array
-    bwt_result = ''.join(input_str[i - 1] for i in suffix_array)
-    return bwt_result
+        # Construct the BWT from the sorted suffix array
+        bwt_result = ''.join(input_str[i - 1] for i in suffix_array)
+        return bwt_result
+    except Exception as e:
+        logging.exception(f"Error in BWT transform")
+        return "Error in BWT transform"
 
-    # Function to perform inverse Burrows-Wheeler Transform
+# Function to perform inverse Burrows-Wheeler Transform
 def inverse_bwt_transform(bwt_str):
-    # Determine the length of the input BWT string
-    length = len(bwt_str)
-    # Find the index of the sentinel character '$'
-    sentinel_index = bwt_str.index("$")
+    """
+    Perform the inverse Burrows-Wheeler Transform.
+    
+    Parameters:
+    bwt_str (str): The BWT transformed string.
 
-    # Sort the BWT string to get the first column
-    first_column = sorted(bwt_str)
-    # Count occurrences of each character in the BWT string
-    char_count = {char: 0 for char in set(bwt_str)}
-    for char in bwt_str:
-        char_count[char] += 1
+    Returns:
+    str: The original string before BWT.
+    """
+    table = [""] * len(bwt_str)
+    for _ in range(len(bwt_str)):
+        table = sorted([bwt_str[i] + table[i] for i in range(len(bwt_str))])
+    s = [row for row in table if row.endswith("$")]
+    return s[0][:-1] if s else "Error in inverse BWT transform"
 
-    # Calculate the position of each character in the sorted first column
-    char_position = {char: 0 for char in char_count}
-    for char in first_column:
-        char_position[char] += 1
-
-    # Initialize an empty string to store the original string
-    original_str = ""
-    # Initialize the index with the sentinel index
-    index = sentinel_index
-
-    # Reconstruct the original string using backward traversal
-    for _ in range(length):
-        original_str = first_column[index] + original_str
-        char = bwt_str[index]
-        index = char_position[char] + bwt_str[:index].count(char)
-
-    return original_str
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 
 # Function to handle socket errors
 def handle_socket_error(e):
-    logging.error(f"Socket error: {e}")
-
-
-import socket  # Import the socket module for hostname retrieval
-
-# Function to parse configuration (host and port)
-def parse_config():
-    config = {
-        "host": socket.gethostname(),  # Get the hostname of the machine where the script runs
-        "port": None  # Set the port to None initially
-    }
+    """
+    Log socket errors.
     
-    # Optional input for host (useful if you want to override the default hostname)
-    # You can leave or remove this part depending on your needs
-    host_input = input("Enter the host name (press Enter to use default): ")
-    if host_input:
-        config["host"] = host_input
-
-    # Input for port with validity check
-    while True:
-        port_input = input("Enter the port number: ")
-        try:
-            port = int(port_input)
-            if 0 < port < 65536:  # Check if the port is within the valid range (1-65535)
-                config["port"] = port
-                break
-            else:
-                print("Invalid port number. Please enter a number between 1 and 65535.")
-        except ValueError:
-            print("Invalid input. Please enter a valid number for the port.")
-
-    return config
+    Parameters:
+    e (Exception): The exception object.
+    """
+    logging.error(f"Socket error: {e}")
 
 
 # Function to validate input data
 def validate_input_data(data):
-    # Example: Check if the input data is a valid DNA sequence
-    valid_chars = set("ATCG")
+    """
+    Validate the input data to ensure it is a valid DNA sequence.
+    
+    Parameters:
+    data (str): The input data to validate.
+
+    Returns:
+    bool: True if the input data is valid, False otherwise.
+    """
+    # Check if the input data is a valid DNA sequence
+    valid_chars = set("ATCGN$")
     return all(char in valid_chars for char in data)
 
 
 # SERVER IMPLEMENTATION
 
+# Funzione per ricevere il messaggio terminato con il carattere speciale
+def receive_message(client_socket):
+    """
+    Receive a message from the client.
+    
+    Parameters:
+    client_socket (socket.socket): The client socket.
+
+    Returns:
+    str: The received message.
+    """
+    try:
+        message = ""
+        while True:
+            # Ricevi dati dal client
+            chunk = client_socket.recv(1024).decode()
+            if not chunk:
+                break
+            message += chunk
+            # Controlla se il messaggio contiene il carattere speciale di fine messaggio
+            if '\0' in message:
+                message = message.split('\0')[0]
+                break
+        logging.info(f"Received message: {message.strip()}")
+        return message.strip()
+    except Exception as e:
+        logging.exception(f"Error receiving message: {e}")
+        return ""
+
+
 # Function to handle client requests
 def handle_request(request):
+    """
+    Handle a client request.
+    
+    Parameters:
+    request (str): The request string containing the command and data.
+
+    Returns:
+    str: The response string.
+    """
     # Split the request into command and data
-    command, data = request.split(':')
+    command, data = request.split(':',1)
     try:
         # Process the request based on the command
         if command == "BWT":
@@ -112,11 +130,35 @@ def handle_request(request):
         else:
             return "Invalid command" 
     except Exception as e:
-        logging.exception(f"Error processing request: {e}")
+        logging.exception(f"Error processing request")
         return "Error processing request"
+    
+
+def send_response(client_socket, response):
+    """
+    Send a response to the client.
+    
+    Parameters:
+    client_socket (socket.socket): The client socket.
+    response (str): The response to send.
+    """
+    try:
+        response += '\0'
+        client_socket.sendall(response.encode())
+        logging.info(f"Sent response: {response}")
+    except Exception as e:
+        logging.exception(f"Failed to send response")
 
 # Function to run the server
-def run_server(host, port):
+def run_server(host, port, stop_event):
+    """
+    Run the server to accept and handle client connections.
+    
+    Parameters:
+    host (str): The server hostname.
+    port (int): The server port.
+    stop_event (threading.Event): Event to signal the server to stop.
+    """
     # Create a server socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
         try:
@@ -127,31 +169,60 @@ def run_server(host, port):
             # Log server status
             logging.info(f"Server listening on {host}:{port}")
 
-            # Server loop to accept client connections
-            while True:
-                # Accept incoming client connection
-                client_socket, addr = server_socket.accept()
+            while not stop_event.is_set():
+                server_socket.settimeout(1.0)
                 try:
-                    # Log client connection
+                    client_socket, addr = server_socket.accept()
+                except socket.timeout:
+                    continue
+                with client_socket:
                     logging.info(f"Accepted connection from {addr}")
-                    # Receive request from client
-                    request = client_socket.recv(1024).decode()
-
-                    # Handle request and generate response
+                    request = receive_message(client_socket)
+                    logging.info(f"Received request: {request}")
                     response = handle_request(request)
-                    # Send response to client
-                    client_socket.send(response.encode())
-                except (socket.error, ConnectionResetError) as e:
-                    # Handle socket errors
-                    handle_socket_error(e)
-                finally:
-                    # Close client socket
-                    client_socket.close()
-        except socket.error as e:
-            # Handle socket errors
+                    send_response(client_socket, response)
+        except Exception as e:
             handle_socket_error(e)
-        except KeyboardInterrupt:
-            # Log server shutdown on keyboard interrupt
-            logging.info("Server interrupted. Shutting down.")
 
+def start_server(host, port):
+    """
+    Start the server in a separate thread.
+    
+    Parameters:
+    host (str): The server hostname.
+    port (int): The server port.
 
+    Returns:
+    tuple: The stop event and the server thread.
+    """
+    stop_event = threading.Event()
+    server_thread = threading.Thread(target=run_server, args=(host, port, stop_event))
+    server_thread.start()
+    return stop_event, server_thread
+
+def stop_server(stop_event, server_thread):
+    """
+    Stop the server by setting the stop event and joining the server thread.
+    
+    Parameters:
+    stop_event (threading.Event): The event to signal the server to stop.
+    server_thread (threading.Thread): The server thread.
+    """
+    stop_event.set()
+    server_thread.join()
+
+if __name__ == "__main__":
+    # Configure logging
+    logging.basicConfig(level=logging.INFO)
+
+    # Define the host and port
+    host = "127.0.0.1"  
+    port = 8080  
+
+    stop_event, server_thread = start_server(host, port)
+    try:
+        while True:
+            pass
+    except KeyboardInterrupt:
+        stop_server(stop_event, server_thread)
+        logging.info("Server interrupted. Shutting down.")
