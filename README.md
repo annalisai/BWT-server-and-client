@@ -44,7 +44,7 @@ To perform the Burrows-Wheeler Transform on a DNA sequence:
 ```
 python3 Client_project.py --host 127.0.0.1 --port 8080 --command BWT
 ```
-Then ask to enter the sequence: 
+You will be prompted to enter the sequence: 
 ```
 Please enter the data: ATGC
 ```
@@ -53,7 +53,7 @@ To perform the inverse Burrows-Wheeler Transform on a BWT sequence:
 ```
 python3 Client_project.py --host 127.0.0.1 --port 8080 --command InverseBWT
 ```
-Then ask to enter the sequence: 
+You will be prompted to enter the sequence: 
 ```
 Please enter the data: C$GTA
 ```
