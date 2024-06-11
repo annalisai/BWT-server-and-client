@@ -40,11 +40,19 @@ python3 Server_project.py
 
 -This command activates the server to listen for client requests.
 
-python3 Client_project.py --host 127.0.0.1 --port 8080 --command BWT --data ATGC
+python3 Client_project.py --host 127.0.0.1 --port 8080 --command BWT
+
+-You will be prompted to enter the sequence:
+
+Please enter the data: ATGC
 
 -This command sends a request to the server to perform the Burrows-Wheeler Transform on the DNA sequence "ATGC".
 
-python3 Client_project.py --host 127.0.0.1 --port 8080 --command InverseBWT --data C$GTA
+python3 Client_project.py --host 127.0.0.1 --port 8080 --command InverseBWT
+
+-You will be prompted to enter the sequence:
+
+Please enter the data: C$GTA
 
 -This command sends a request to the server to perform the inverse Burrows-Wheeler Transform on the BWT sequence "CGTA$".
 
